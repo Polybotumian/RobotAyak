@@ -62,137 +62,126 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
   List<int> pins = List.from([0, 0, 0], growable: false);
   List<bool> activeServos = List.from([true, true, true], growable: false);
   List<int> tours = List.from([0, 0, 0], growable: false);
+  bool _isButtonDisabled = false;
 
   Future<void> makeGetRequest() async {
-    try {
-      final url = Uri.parse('$urlPrefix/getdefault');
-      Response response = await get(url);
-      Map<String, dynamic> map = await jsonDecode(response.body);
-      angles = List.from([
-        map["angle0"].toDouble(),
-        map["angle1"].toDouble(),
-        map["angle2"].toDouble()
-      ], growable: false);
-      activeServos = List.from([
-        map["servo0"] == 0 ? false : true,
-        map["servo1"] == 0 ? false : true,
-        map["servo2"] == 0 ? false : true
-      ], growable: false);
-      pins =
-          List.from([map["pin0"], map["pin1"], map["pin2"]], growable: false);
-      tours = List.from([map["tour0"], map["tour1"], map["tour2"]],
-          growable: false);
-      setState(() {});
-    } catch (e) {}
+    while (true) {
+      try {
+        final url = Uri.parse('$urlPrefix/getdefault');
+        Response response = await get(url);
+        Map<String, dynamic> map = await jsonDecode(response.body);
+        angles = List.from([
+          map["angle0"].toDouble(),
+          map["angle1"].toDouble(),
+          map["angle2"].toDouble()
+        ], growable: false);
+        activeServos = List.from([
+          map["servo0"] == 0 ? false : true,
+          map["servo1"] == 0 ? false : true,
+          map["servo2"] == 0 ? false : true
+        ], growable: false);
+        pins =
+            List.from([map["pin0"], map["pin1"], map["pin2"]], growable: false);
+        tours = List.from([map["tour0"], map["tour1"], map["tour2"]],
+            growable: false);
+        setState(() {});
+        break;
+      } catch (e) {}
+    }
   }
 
   Future<void> makePostRequest() async {
+    _isButtonDisabled = true;
     final url = Uri.parse(
         '$urlPrefix/start?angle0=${angles[0]}&angle1=${angles[1]}'
         '&angle2=${angles[2]}&servo0=${activeServos[0] ? 1 : 0}&servo1=${activeServos[1] ? 1 : 0}&servo2=${activeServos[2] ? 1 : 0}'
         '&pin0=${pins[0]}&pin1=${pins[1]}&pin2=${pins[2]}&tour0=${tours[0]}&tour1=${tours[1]}&tour2=${tours[2]}');
-    post(url);
+    Response response = await post(url);
+    if (response.body == "Status : 200") {
+      _isButtonDisabled = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    EdgeInsets containerMargin =
+        EdgeInsets.only(top: MediaQuery.of(context).size.height / 20);
     return Center(
-        child: Column(
-      textDirection: TextDirection.ltr,
-      verticalDirection: VerticalDirection.down,
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: ListView(
+      scrollDirection: Axis.vertical,
       children: [
         Container(
+            margin: containerMargin,
+            color: const Color.fromARGB(255, 73, 73, 73),
+            child: Column(children: [
+              const Text("Servo Açı Ayarları"),
+              Container(
+                  color: const Color.fromARGB(255, 119, 119, 119),
+                  child: Column(children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      textDirection: TextDirection.ltr,
+                      children: [
+                        const Text("Açı 0"),
+                        Slider(
+                          value: angles[0],
+                          max: 360,
+                          divisions: 360,
+                          label: angles[0].round().toString(),
+                          onChanged: (double value) {
+                            setState(() {
+                              angles[0] = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      textDirection: TextDirection.ltr,
+                      children: [
+                        const Text("Açı 1"),
+                        Slider(
+                          value: angles[1],
+                          max: 360,
+                          divisions: 360,
+                          label: angles[1].round().toString(),
+                          onChanged: (double value) {
+                            setState(() {
+                              angles[1] = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      textDirection: TextDirection.ltr,
+                      children: [
+                        const Text("Açı 2"),
+                        Slider(
+                          value: angles[2],
+                          max: 360,
+                          divisions: 360,
+                          label: angles[2].round().toString(),
+                          onChanged: (double value) {
+                            setState(() {
+                              angles[2] = value;
+                            });
+                          },
+                        ),
+                      ],
+                    )
+                  ]))
+            ])),
+        Container(
+          margin: containerMargin,
           color: const Color.fromARGB(255, 73, 73, 73),
           child: Column(children: [
             const Text("Servo 0"),
             Container(
               color: const Color.fromARGB(255, 119, 119, 119),
               child: Column(children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  textDirection: TextDirection.ltr,
-                  children: [
-                    const Text("Açı"),
-                    Slider(
-                      value: angles[0],
-                      max: 360,
-                      divisions: 360,
-                      label: angles[0].round().toString(),
-                      onChanged: (double value) {
-                        setState(() {
-                          angles[0] = value;
-                        });
-                      },
-                    ),
-                    const Text("Pin"),
-                    DropdownButton(
-                      alignment: AlignmentDirectional.centerEnd,
-                      borderRadius: BorderRadius.circular(10),
-                      dropdownColor: const Color.fromARGB(255, 73, 73, 73),
-                      value: pins[0],
-                      items: const <DropdownMenuItem<int>>[
-                        DropdownMenuItem(
-                          value: 0,
-                          child: Text("0"),
-                        ),
-                        DropdownMenuItem(
-                          value: 1,
-                          child: Text("1"),
-                        ),
-                        DropdownMenuItem(
-                          value: 2,
-                          child: Text("2"),
-                        ),
-                        DropdownMenuItem(
-                          value: 3,
-                          child: Text("3"),
-                        ),
-                        DropdownMenuItem(
-                          value: 4,
-                          child: Text("4"),
-                        ),
-                        DropdownMenuItem(
-                          value: 5,
-                          child: Text("5"),
-                        ),
-                        DropdownMenuItem(
-                          value: 9,
-                          child: Text("9"),
-                        ),
-                        DropdownMenuItem(
-                          value: 10,
-                          child: Text("10"),
-                        ),
-                        DropdownMenuItem(
-                          value: 12,
-                          child: Text("12"),
-                        ),
-                        DropdownMenuItem(
-                          value: 13,
-                          child: Text("13"),
-                        ),
-                        DropdownMenuItem(
-                          value: 14,
-                          child: Text("14"),
-                        ),
-                        DropdownMenuItem(
-                          value: 15,
-                          child: Text("15"),
-                        ),
-                        DropdownMenuItem(
-                          value: 16,
-                          child: Text("16"),
-                        )
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          pins[0] = value!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   textDirection: TextDirection.ltr,
@@ -263,42 +252,13 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                           tours[0] = value!;
                         });
                       },
-                    )
-                  ],
-                )
-              ]),
-            )
-          ]),
-        ),
-        Container(
-          color: const Color.fromARGB(255, 73, 73, 73),
-          child: Column(children: [
-            const Text("Servo 1"),
-            Container(
-              color: const Color.fromARGB(255, 119, 119, 119),
-              child: Column(children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  textDirection: TextDirection.ltr,
-                  children: [
-                    const Text("Açı"),
-                    Slider(
-                      value: angles[1],
-                      max: 360,
-                      divisions: 360,
-                      label: angles[1].round().toString(),
-                      onChanged: (double value) {
-                        setState(() {
-                          angles[1] = value;
-                        });
-                      },
                     ),
                     const Text("Pin"),
                     DropdownButton(
                       alignment: AlignmentDirectional.centerEnd,
                       borderRadius: BorderRadius.circular(10),
                       dropdownColor: const Color.fromARGB(255, 73, 73, 73),
-                      value: pins[1],
+                      value: pins[0],
                       items: const <DropdownMenuItem<int>>[
                         DropdownMenuItem(
                           value: 0,
@@ -355,12 +315,24 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                       ],
                       onChanged: (value) {
                         setState(() {
-                          pins[1] = value!;
+                          pins[0] = value!;
                         });
                       },
-                    ),
+                    )
                   ],
-                ),
+                )
+              ]),
+            )
+          ]),
+        ),
+        Container(
+          margin: containerMargin,
+          color: const Color.fromARGB(255, 73, 73, 73),
+          child: Column(children: [
+            const Text("Servo 1"),
+            Container(
+              color: const Color.fromARGB(255, 119, 119, 119),
+              child: Column(children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   textDirection: TextDirection.ltr,
@@ -431,42 +403,13 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                           tours[1] = value!;
                         });
                       },
-                    )
-                  ],
-                )
-              ]),
-            )
-          ]),
-        ),
-        Container(
-          color: const Color.fromARGB(255, 73, 73, 73),
-          child: Column(children: [
-            const Text("Servo 2"),
-            Container(
-              color: const Color.fromARGB(255, 119, 119, 119),
-              child: Column(children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  textDirection: TextDirection.ltr,
-                  children: [
-                    const Text("Açı"),
-                    Slider(
-                      value: angles[2],
-                      max: 360,
-                      divisions: 360,
-                      label: angles[2].round().toString(),
-                      onChanged: (double value) {
-                        setState(() {
-                          angles[2] = value;
-                        });
-                      },
                     ),
                     const Text("Pin"),
                     DropdownButton(
                       alignment: AlignmentDirectional.centerEnd,
                       borderRadius: BorderRadius.circular(10),
                       dropdownColor: const Color.fromARGB(255, 73, 73, 73),
-                      value: pins[2],
+                      value: pins[1],
                       items: const <DropdownMenuItem<int>>[
                         DropdownMenuItem(
                           value: 0,
@@ -523,12 +466,24 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                       ],
                       onChanged: (value) {
                         setState(() {
-                          pins[2] = value!;
+                          pins[1] = value!;
                         });
                       },
-                    ),
+                    )
                   ],
-                ),
+                )
+              ]),
+            )
+          ]),
+        ),
+        Container(
+          margin: containerMargin,
+          color: const Color.fromARGB(255, 73, 73, 73),
+          child: Column(children: [
+            const Text("Servo 2"),
+            Container(
+              color: const Color.fromARGB(255, 119, 119, 119),
+              child: Column(children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   textDirection: TextDirection.ltr,
@@ -599,6 +554,72 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                           tours[2] = value!;
                         });
                       },
+                    ),
+                    const Text("Pin"),
+                    DropdownButton(
+                      alignment: AlignmentDirectional.centerEnd,
+                      borderRadius: BorderRadius.circular(10),
+                      dropdownColor: const Color.fromARGB(255, 73, 73, 73),
+                      value: pins[2],
+                      items: const <DropdownMenuItem<int>>[
+                        DropdownMenuItem(
+                          value: 0,
+                          child: Text("0"),
+                        ),
+                        DropdownMenuItem(
+                          value: 1,
+                          child: Text("1"),
+                        ),
+                        DropdownMenuItem(
+                          value: 2,
+                          child: Text("2"),
+                        ),
+                        DropdownMenuItem(
+                          value: 3,
+                          child: Text("3"),
+                        ),
+                        DropdownMenuItem(
+                          value: 4,
+                          child: Text("4"),
+                        ),
+                        DropdownMenuItem(
+                          value: 5,
+                          child: Text("5"),
+                        ),
+                        DropdownMenuItem(
+                          value: 9,
+                          child: Text("9"),
+                        ),
+                        DropdownMenuItem(
+                          value: 10,
+                          child: Text("10"),
+                        ),
+                        DropdownMenuItem(
+                          value: 12,
+                          child: Text("12"),
+                        ),
+                        DropdownMenuItem(
+                          value: 13,
+                          child: Text("13"),
+                        ),
+                        DropdownMenuItem(
+                          value: 14,
+                          child: Text("14"),
+                        ),
+                        DropdownMenuItem(
+                          value: 15,
+                          child: Text("15"),
+                        ),
+                        DropdownMenuItem(
+                          value: 16,
+                          child: Text("16"),
+                        )
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          pins[2] = value!;
+                        });
+                      },
                     )
                   ],
                 )
@@ -606,14 +627,16 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
             )
           ]),
         ),
-        ElevatedButton(
-          style: const ButtonStyle(
-              textStyle: MaterialStatePropertyAll(TextStyle(fontSize: 25)),
-              minimumSize: MaterialStatePropertyAll(Size(200, 100))),
-          onPressed: () {
-            makePostRequest();
-          },
-          child: const Text("BAŞLAT"),
+        Container(
+          margin: containerMargin,
+          child: ElevatedButton(
+            style: const ButtonStyle(
+                textStyle: MaterialStatePropertyAll(TextStyle(fontSize: 25)),
+                minimumSize: MaterialStatePropertyAll(Size(200, 100))),
+            onPressed: () =>
+                _isButtonDisabled == true ? null : makePostRequest(),
+            child: const Text("BAŞLAT"),
+          ),
         )
       ],
     ));
